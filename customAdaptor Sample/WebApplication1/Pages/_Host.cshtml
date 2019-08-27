@@ -1,0 +1,21 @@
+﻿@page "/"
+@namespace WebApplication1.Pages
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <environment include="Development">
+        <link href="https://cdn.syncfusion.com/ej2/fabric.css" rel="stylesheet" />
+        <script src="~/ej2.min123.js"></script>
+        <script src="~/ejs.interop.js"></script>
+        @*<script src="~/ej2.min (1).js"></script>*@
+        @*<script src="https://cdn.syncfusion.com/ej2/dist/ej2.min.js"></script>*@
+    </environment>
+</head>
+<body>
+    <app>@(await Html.RenderComponentAsync<App>())</app>
+
+    <script src="_framework/blazor.server.js"></script>
+</body>
+</html>

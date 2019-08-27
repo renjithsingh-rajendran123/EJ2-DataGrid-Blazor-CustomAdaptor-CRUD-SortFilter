@@ -1,0 +1,127 @@
+﻿@page "/"
+
+<h1>Hello, world!</h1>
+
+
+
+@using Syncfusion.EJ2.Blazor
+@using Syncfusion.EJ2.Blazor.Grids
+@using Syncfusion.EJ2.Blazor.Buttons
+@using Syncfusion.EJ2.Blazor.Data
+@using Microsoft.JSInterop;
+@using Newtonsoft.Json;
+@using Microsoft.VisualBasic.CompilerServices;
+@using System.Threading;
+@using System.Threading.Tasks;
+@using System.Net.Http
+
+<EjsGrid TValue="OrdersDetails" ID="Grid" @ref="@defaultGrid" @ref:suppressField AllowSorting="true" AllowFiltering="true" AllowPaging="true" Toolbar="@(new List<string>() { "Add", "Delete", "Update", "Cancel" })">
+        <EjsDataManager AdaptorInstance="@typeof(CustomAdaptor)" Adaptor="Adaptors.CustomAdaptor"></EjsDataManager>
+    <GridEditSettings AllowEditing="true" AllowDeleting="true" AllowAdding="true" Mode="@EditMode.Normal"></GridEditSettings>
+    <GridColumns>
+        <GridColumn Field=@nameof(OrdersDetails.OrderID) HeaderText="Order ID" IsPrimaryKey="true" TextAlign="@TextAlign.Center" Width="140"></GridColumn>
+        <GridColumn Field=@nameof(OrdersDetails.CustomerID) HeaderText="Customer Name" Width="150">
+
+        </GridColumn>
+        <GridColumn Field=@nameof(OrdersDetails.ShipCountry) HeaderText="Ship Country" Width="150"></GridColumn>
+    </GridColumns>
+</EjsGrid>
+
+@functions{
+        EjsGrid<OrdersDetails> defaultGrid;
+        public bool flag = false;
+
+        public class Orders
+        {
+            public Orders() { }
+            public Orders(int OrderID, string CustomerID)
+            {
+                this.OrderID = OrderID;
+                this.CustomerID = CustomerID;
+            }
+            public int OrderID { get; set; }
+            public string CustomerID { get; set; }
+        }
+        public class CustomAdaptor : DataAdaptor
+        {
+
+            static readonly HttpClient client = new HttpClient();
+            public static List<OrdersDetails> order = OrdersDetails.GetAllRecords();
+
+            public override object Read(DataManagerRequest dm, string key = null)
+            {
+                IEnumerable<OrdersDetails> DataSource = order;
+                if (dm.Search != null && dm.Search.Count > 0)
+                {
+                    DataSource = DataOperations.PerformSearching(DataSource, dm.Search);  //Search
+                }
+                if (dm.Sorted != null && dm.Sorted.Count > 0) //Sorting
+                {
+                    DataSource = DataOperations.PerformSorting(DataSource, dm.Sorted);
+                }
+                if (dm.Where != null && dm.Where.Count > 0) //Filtering
+                {
+                    DataSource = DataOperations.PerformFiltering(DataSource, dm.Where, dm.Where[0].Operator);
+                }
+                int count = DataSource.Cast<OrdersDetails>().Count();
+                if (dm.Skip != 0)
+                {
+                    DataSource = DataOperations.PerformSkip(DataSource, dm.Skip);         //Paging
+                }
+                if (dm.Take != 0)
+                {
+                    DataSource = DataOperations.PerformTake(DataSource, dm.Take);
+                }
+                return dm.RequiresCounts ? new DataResult() { Result = DataSource, Count = count } : (object)DataSource;
+            }
+            public override object Insert(DataManager dm, object value, string key)
+            {
+                order.Insert(0, value as OrdersDetails);
+                return value;
+            }
+            public override object Remove(DataManager dm, object value, string keyField, string key)
+            {
+                order.Remove(order.Where(or => or.OrderID == int.Parse(value.ToString())).FirstOrDefault());
+                return value;
+            }
+            public override object Update(DataManager dm, object value, string keyField, string key)
+            {
+                var data = order.Where(or => or.OrderID == (value as OrdersDetails).OrderID).FirstOrDefault();
+                if(data != null)
+                {
+                    data.OrderID = (value as OrdersDetails).OrderID;
+                    data.CustomerID = (value as OrdersDetails).CustomerID;
+                    data.ShipCountry = (value as OrdersDetails).ShipCountry;
+                }
+                return value;
+            }
+            public override object BatchUpdate(DataManager dm, object Changed, object Added, object Deleted, string KeyField, string Key)
+            {
+                if (Changed != null)
+                {
+                    foreach (var rec in (IEnumerable<OrdersDetails>)Changed)
+                    {
+                        order[0].CustomerID = rec.CustomerID;
+                    }
+
+                }
+                if (Added != null)
+                {
+                    foreach (var rec in (IEnumerable<OrdersDetails>)Added)
+                    {
+                        order.Add(rec);
+                    }
+
+                }
+                if (Deleted != null)
+                {
+                    foreach (var rec in (IEnumerable<OrdersDetails>)Deleted)
+                    {
+                        order.RemoveAt(0);
+                    }
+
+                }
+                return order;
+            }
+        }
+}
